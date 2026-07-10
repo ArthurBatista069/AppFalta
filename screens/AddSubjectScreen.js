@@ -1,49 +1,54 @@
 import React, { useState } from "react";
-import { View, TextInput, Button } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 
-export default function AddSubjectScreen({ navigation }) {
+export default function AddSubjectScreen({ navigation, route }) {
+  const { subjects, setSubjects } = route.params;
+
   const [nome, setNome] = useState("");
-  const [limiteFaltas, setLimiteFaltas] = useState("");
+  const [maxFaltas, setMaxFaltas] = useState("");
 
-  const saveSubject = async () => {
-    if (!nome || !limiteFaltas) return;
+  const adicionarMateria = () => {
+    if (!nome || !maxFaltas) return;
 
-    const newSubject = {
+    const novaMateria = {
       id: Date.now().toString(),
       nome,
-      limiteFaltas: Number(limiteFaltas),
-      faltas: 0,
+      maxFaltas: parseInt(maxFaltas),
+      faltas: [],
     };
 
-    const data = await AsyncStorage.getItem("subjects");
-    const subjects = data ? JSON.parse(data) : [];
-
-    subjects.push(newSubject);
-
-    await AsyncStorage.setItem("subjects", JSON.stringify(subjects));
-
+    setSubjects([...subjects, novaMateria]);
     navigation.goBack();
   };
 
   return (
-    <View style={{ padding: 20 }}>
+    <View style={{ flex: 1, padding: 20 }}>
+      <Text>Nome da Matéria</Text>
       <TextInput
-        placeholder="Nome da matéria"
         value={nome}
         onChangeText={setNome}
-        style={{ borderWidth: 1, marginBottom: 10, padding: 8 }}
+        style={{ borderWidth: 1, padding: 10, marginBottom: 15 }}
       />
 
+      <Text>Quantas faltas você pode ter?</Text>
       <TextInput
-        placeholder="Quantas faltas posso ter? (ex: 18)"
-        value={limiteFaltas}
-        onChangeText={setLimiteFaltas}
+        value={maxFaltas}
+        onChangeText={setMaxFaltas}
         keyboardType="numeric"
-        style={{ borderWidth: 1, marginBottom: 10, padding: 8 }}
+        style={{ borderWidth: 1, padding: 10, marginBottom: 20 }}
+         
       />
 
-      <Button title="Salvar" onPress={saveSubject} />
+      <TouchableOpacity
+        onPress={adicionarMateria}
+        style={{
+          backgroundColor: "#4CAF50",
+          padding: 15,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "black" }}>Salvar</Text>
+      </TouchableOpacity>
     </View>
   );
 }

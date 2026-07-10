@@ -13,14 +13,19 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sharktuta.AppFalta",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.sharktuta.AppFalta"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,6 +34,12 @@
       "eas": {
         "projectId": "b824a2eb-5073-496c-aed9-f204c8e0326f"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b824a2eb-5073-496c-aed9-f204c8e0326f"
     }
   }
 }

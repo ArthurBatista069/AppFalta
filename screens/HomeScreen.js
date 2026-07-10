@@ -1,30 +1,46 @@
-import React, { useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  Alert,
+} from "react-native";
 
-export default function HomeScreen({ navigation }) {
-  const [subjects, setSubjects] = useState([]);
+export default function HomeScreen({ navigation, route }) {
+  const { subjects, setSubjects } = route.params;
 
-  const loadSubjects = async () => {
-    const data = await AsyncStorage.getItem("subjects");
-    if (data) {
-      setSubjects(JSON.parse(data));
-    } else {
-      setSubjects([]);
-    }
+  const confirmarRemocao = (id, nome) => {
+    Alert.alert(
+      "Confirmar Exclusão",
+      `Tem certeza que deseja apagar a matéria "${nome}"?\n\nEssa ação não pode ser desfeita.`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Sim, apagar",
+          style: "destructive",
+          onPress: () => removerMateria(id),
+        },
+      ]
+    );
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSubjects();
-    }, [])
-  );
+  const removerMateria = (id) => {
+    const novasMaterias = subjects.filter(
+      (item) => item.id !== id
+    );
+    setSubjects(novasMaterias);
+  };
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
       <TouchableOpacity
-        onPress={() => navigation.navigate("Adicionar")}
+        onPress={() =>
+          navigation.navigate("Adicionar", { subjects, setSubjects })
+        }
         style={{ marginBottom: 20 }}
       >
         <Text style={{ fontSize: 18 }}>+ Adicionar Matéria</Text>
@@ -33,20 +49,55 @@ export default function HomeScreen({ navigation }) {
       <FlatList
         data={subjects}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <Text>Nenhuma matéria cadastrada ainda.</Text>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("Detalhes", { subject: item })
-            }
-            style={{ marginBottom: 15 }}
-          >
-            <Text style={{ fontSize: 18 }}>{item.nome}</Text>
-            <Text>Faltas: {item.faltas} / {item.limiteFaltas}</Text>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const totalFaltas = item.faltas.reduce(
+            (acc, falta) => acc + falta.quantidade,
+            0
+          );
+
+          return (
+            <View
+              style={{
+                padding: 15,
+                borderWidth: 1,
+                marginBottom: 10,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("Detalhes", {
+                    subject: item,
+                    subjects,
+                    setSubjects,
+                  })
+                }
+              >
+                <Text style={{ fontSize: 18 }}>
+                  {item.nome}
+                </Text>
+                <Text>
+                  Faltas: {totalFaltas} / {item.maxFaltas}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() =>
+                  confirmarRemocao(item.id, item.nome)
+                }
+                style={{
+                  marginTop: 10,
+                  backgroundColor: "red",
+                  padding: 8,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "white" }}>
+                  Remover Matéria
+                </Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }}
       />
     </View>
   );

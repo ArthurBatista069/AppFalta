@@ -1,73 +1,167 @@
 import React, { useState } from "react";
-import { View, Text, Button, TextInput, Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  Alert,
+  LayoutAnimation,
+  UIManager,
+  Platform,
+} from "react-native";
+
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function DetailsScreen({ route, navigation }) {
-  const { subject } = route.params;
-  const [faltas, setFaltas] = useState(subject.faltas);
-  const [faltasRecebidas, setFaltasRecebidas] = useState("");
+  const { subject, subjects, setSubjects } = route.params;
 
-  const addFalta = async () => {
-    if (!faltasRecebidas) return;
+  const [quantidadeFalta, setQuantidadeFalta] = useState("");
+  const [explicacao, setExplicacao] = useState("");
 
-    const quantidade = Number(faltasRecebidas);
+  const materiaAtual = subjects.find(
+    (item) => item.id === subject.id
+  );
 
-    const data = await AsyncStorage.getItem("subjects");
-    let subjects = JSON.parse(data);
+  if (!materiaAtual) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Matéria não encontrada.</Text>
+      </View>
+    );
+  }
 
-    subjects = subjects.map((s) =>
-      s.id === subject.id ? { ...s, faltas: s.faltas + quantidade } : s
+  const totalFaltas = materiaAtual.faltas.reduce(
+    (acc, falta) => acc + falta.quantidade,
+    0
+  );
+
+  const faltasRestantes =
+    materiaAtual.maxFaltas - totalFaltas;
+
+  const adicionarFalta = () => {
+    if (!quantidadeFalta) return;
+
+    if (faltasRestantes <= 0) {
+      Alert.alert(
+        "Limite atingido",
+        "Você já atingiu o limite de faltas!"
+      );
+      return;
+    }
+
+    LayoutAnimation.configureNext(
+      LayoutAnimation.Presets.easeInEaseOut
     );
 
-    await AsyncStorage.setItem("subjects", JSON.stringify(subjects));
+    const novaFalta = {
+      id: Date.now().toString(),
+      quantidade: parseInt(quantidadeFalta),
+      data: new Date().toLocaleDateString("pt-BR"),
+      explicacao:
+        explicacao.trim() === "" ? "preguiça" : explicacao,
+    };
 
-    const novoTotal = faltas + quantidade;
-    setFaltas(novoTotal);
-    setFaltasRecebidas("");
+    setSubjects((prevSubjects) =>
+      prevSubjects.map((item) =>
+        item.id === subject.id
+          ? {
+              ...item,
+              faltas: [...item.faltas, novaFalta],
+            }
+          : item
+      )
+    );
 
-    if (novoTotal >= subject.limiteFaltas) {
-      Alert.alert("⚠️ Atenção", "Você atingiu o limite de faltas!");
-    }
-  };
-
-  const removerMateria = async () => {
-    const data = await AsyncStorage.getItem("subjects");
-    let subjects = JSON.parse(data);
-
-    subjects = subjects.filter((s) => s.id !== subject.id);
-
-    await AsyncStorage.setItem("subjects", JSON.stringify(subjects));
+    setQuantidadeFalta("");
+    setExplicacao("");
 
     navigation.goBack();
   };
 
-  return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 22 }}>{subject.nome}</Text>
+  const corRestante =
+    faltasRestantes <= 2 ? "red" : "black";
 
-      <Text style={{ marginTop: 10 }}>
-        Limite de Faltas: {subject.limiteFaltas}
+  return (
+    <View style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 22 }}>
+        {materiaAtual.nome}
       </Text>
 
-      <Text>Faltas atuais: {faltas}</Text>
+      <Text>
+        Total: {totalFaltas} / {materiaAtual.maxFaltas}
+      </Text>
+
+      <Text style={{ color: corRestante }}>
+        Restantes: {faltasRestantes}
+      </Text>
 
       <TextInput
-        placeholder="Quantas faltas recebi hoje?"
-        value={faltasRecebidas}
-        onChangeText={setFaltasRecebidas}
+        placeholder="Quantas faltas?"
+        placeholderTextColor={"black"}
         keyboardType="numeric"
-        style={{ borderWidth: 1, marginVertical: 10, padding: 8 }}
+        value={quantidadeFalta}
+        onChangeText={setQuantidadeFalta}
+        style={{
+          borderWidth: 1,
+          padding: 10,
+          marginTop: 20,
+          marginBottom: 10,
+        }}
       />
 
-      <Button title="Adicionar falta" onPress={addFalta} />
+      <TextInput
+        placeholder="Explicação (opcional)"
+        placeholderTextColor={"black"}
+        value={explicacao}
+        onChangeText={setExplicacao}
+        style={{
+          borderWidth: 1,
+          padding: 10,
+          marginBottom: 10,
+        }}
+      />
 
-      <View style={{ marginTop: 20 }}>
-        <Button
-          title="Remover matéria"
-          color="red"
-          onPress={removerMateria}
-        />
-      </View>
+      <TouchableOpacity
+        onPress={adicionarFalta}
+        style={{
+          backgroundColor:
+            faltasRestantes <= 0
+              ? "gray"
+              : "#4CAF50",
+          padding: 15,
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
+        <Text style={{ color: "white" }}>
+          Registrar Falta
+        </Text>
+      </TouchableOpacity>
+
+      <FlatList
+        data={materiaAtual.faltas}
+        keyExtractor={(item) => item.id}
+        extraData={materiaAtual.faltas}
+        renderItem={({ item }) => (
+          <View
+            style={{
+              borderWidth: 1,
+              padding: 10,
+              marginBottom: 10,
+            }}
+          >
+            <Text>📅 {item.data}</Text>
+            <Text>❌ {item.quantidade}</Text>
+            <Text>📝 {item.explicacao}</Text>
+          </View>
+        )}
+      />
     </View>
   );
 }
