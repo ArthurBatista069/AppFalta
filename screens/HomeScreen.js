@@ -8,10 +8,11 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../context/ThemeContext";
 
 export default function HomeScreen({ navigation, route }) {
   const { subjects, setSubjects } = route.params;
-  
+  const { colors, modoEscuro, alternarTema } = useTheme();
 
   const confirmarRemocao = (id, nome) => {
     Alert.alert(
@@ -24,7 +25,7 @@ export default function HomeScreen({ navigation, route }) {
           style: "destructive",
           onPress: () => removerMateria(id),
         },
-      ]
+      ],
     );
   };
 
@@ -32,26 +33,37 @@ export default function HomeScreen({ navigation, route }) {
     setSubjects(subjects.filter((item) => item.id !== id));
   };
 
-  // Retorna cor conforme proximidade do limite de faltas
   const getStatusColor = (total, max) => {
-    if (max === 0) return "#4CAF50";
+    if (max === 0) return colors.success;
     const ratio = total / max;
-    if (ratio >= 1) return "#E53935"; // estourou
-    if (ratio >= 0.75) return "#FB8C00"; // atenção
-    return "#43A047"; // tranquilo
+    if (ratio >= 1) return colors.danger;
+    if (ratio >= 0.75) return colors.warning;
+    return colors.success;
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Minhas Matérias</Text>
-        <Text style={styles.headerSubtitle}>
-          {subjects.length} {subjects.length === 1 ? "matéria" : "matérias"}
-        </Text>
+        <View>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Minhas Matérias
+          </Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            {subjects.length} {subjects.length === 1 ? "matéria" : "matérias"}
+          </Text>
+        </View>
+
+        <TouchableOpacity onPress={alternarTema} style={styles.themeToggle}>
+          <Ionicons
+            name={modoEscuro ? "sunny-outline" : "moon-outline"}
+            size={24}
+            color={colors.icon}
+          />
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: colors.primary }]}
         activeOpacity={0.8}
         onPress={() =>
           navigation.navigate("Adicionar", { subjects, setSubjects })
@@ -67,8 +79,8 @@ export default function HomeScreen({ navigation, route }) {
         contentContainerStyle={{ paddingBottom: 20 }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="book-outline" size={48} color="#BDBDBD" />
-            <Text style={styles.emptyText}>
+            <Ionicons name="book-outline" size={48} color={colors.textMuted} />
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
               Nenhuma matéria cadastrada ainda.{"\n"}Toque em "Adicionar
               Matéria" para começar.
             </Text>
@@ -76,17 +88,15 @@ export default function HomeScreen({ navigation, route }) {
         }
         renderItem={({ item }) => {
           const totalFaltas = item.faltas.reduce(
-            (acc, falta) => acc + falta.quantidade,
-            0
+            (acc, f) => acc + f.quantidade,
+            0,
           );
           const statusColor = getStatusColor(totalFaltas, item.maxFaltas);
           const progresso =
-            item.maxFaltas > 0
-              ? Math.min(totalFaltas / item.maxFaltas, 1)
-              : 0;
+            item.maxFaltas > 0 ? Math.min(totalFaltas / item.maxFaltas, 1) : 0;
 
           return (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() =>
@@ -98,7 +108,9 @@ export default function HomeScreen({ navigation, route }) {
                 }
               >
                 <View style={styles.cardHeader}>
-                  <Text style={styles.subjectName}>{item.nome}</Text>
+                  <Text style={[styles.subjectName, { color: colors.text }]}>
+                    {item.nome}
+                  </Text>
                   <View
                     style={[
                       styles.badge,
@@ -111,7 +123,12 @@ export default function HomeScreen({ navigation, route }) {
                   </View>
                 </View>
 
-                <View style={styles.progressBarBg}>
+                <View
+                  style={[
+                    styles.progressBarBg,
+                    { backgroundColor: colors.progressBg },
+                  ]}
+                >
                   <View
                     style={[
                       styles.progressBarFill,
@@ -123,11 +140,9 @@ export default function HomeScreen({ navigation, route }) {
                   />
                 </View>
 
-                <Text style={styles.faltasLabel}>
+                <Text style={[styles.faltasLabel, { color: colors.textMuted }]}>
                   {item.maxFaltas - totalFaltas > 0
-                    ? `Você ainda pode faltar ${
-                        item.maxFaltas - totalFaltas
-                      }x`
+                    ? `Você ainda pode faltar ${item.maxFaltas - totalFaltas}x`
                     : "Limite de faltas atingido"}
                 </Text>
               </TouchableOpacity>
@@ -137,8 +152,16 @@ export default function HomeScreen({ navigation, route }) {
                 style={styles.removeButton}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="trash-outline" size={16} color="#E53935" />
-                <Text style={styles.removeButtonText}>Remover</Text>
+                <Ionicons
+                  name="trash-outline"
+                  size={16}
+                  color={colors.danger}
+                />
+                <Text
+                  style={[styles.removeButtonText, { color: colors.danger }]}
+                >
+                  Remover
+                </Text>
               </TouchableOpacity>
             </View>
           );
@@ -149,42 +172,27 @@ export default function HomeScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F6FA",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-  },
+  container: { flex: 1, paddingHorizontal: 20, paddingTop: 60 },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
   },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#1A1A1A",
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#8E8E93",
-    marginTop: 2,
-  },
+  headerTitle: { fontSize: 26, fontWeight: "700" },
+  headerSubtitle: { fontSize: 14, marginTop: 2 },
+  themeToggle: { padding: 6 },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#3D5AFE",
     borderRadius: 12,
     paddingVertical: 14,
     marginBottom: 20,
     gap: 8,
   },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  addButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   card: {
-    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,
@@ -200,36 +208,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  subjectName: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#1A1A1A",
-    flexShrink: 1,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  badgeText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
+  subjectName: { fontSize: 17, fontWeight: "600", flexShrink: 1 },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  badgeText: { fontSize: 13, fontWeight: "700" },
   progressBarBg: {
     height: 6,
-    backgroundColor: "#EEEEF2",
     borderRadius: 3,
     overflow: "hidden",
     marginBottom: 8,
   },
-  progressBarFill: {
-    height: "100%",
-    borderRadius: 3,
-  },
-  faltasLabel: {
-    fontSize: 13,
-    color: "#8E8E93",
-  },
+  progressBarFill: { height: "100%", borderRadius: 3 },
+  faltasLabel: { fontSize: 13 },
   removeButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -238,11 +227,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 6,
   },
-  removeButtonText: {
-    color: "#E53935",
-    fontSize: 13,
-    fontWeight: "600",
-  },
+  removeButtonText: { fontSize: 13, fontWeight: "600" },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
@@ -251,7 +236,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: "center",
-    color: "#8E8E93",
     marginTop: 12,
     fontSize: 14,
     lineHeight: 20,

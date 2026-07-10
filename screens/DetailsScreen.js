@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../context/ThemeContext";
 
 if (
   Platform.OS === "android" &&
@@ -23,6 +24,7 @@ if (
 
 export default function DetailsScreen({ route, navigation }) {
   const { subject, subjects, setSubjects } = route.params;
+  const { colors } = useTheme();
 
   const [quantidadeFalta, setQuantidadeFalta] = useState("");
   const [explicacao, setExplicacao] = useState("");
@@ -31,9 +33,11 @@ export default function DetailsScreen({ route, navigation }) {
 
   if (!materiaAtual) {
     return (
-      <View style={styles.notFoundContainer}>
-        <Ionicons name="alert-circle-outline" size={40} color="#BDBDBD" />
-        <Text style={styles.notFoundText}>Matéria não encontrada.</Text>
+      <View style={[styles.notFoundContainer, { backgroundColor: colors.background }]}>
+        <Ionicons name="alert-circle-outline" size={40} color={colors.textMuted} />
+        <Text style={[styles.notFoundText, { color: colors.textMuted }]}>
+          Matéria não encontrada.
+        </Text>
       </View>
     );
   }
@@ -77,9 +81,9 @@ export default function DetailsScreen({ route, navigation }) {
   };
 
   const getStatusColor = () => {
-    if (faltasRestantes <= 0) return "#E53935";
-    if (faltasRestantes <= 2) return "#FB8C00";
-    return "#43A047";
+    if (faltasRestantes <= 0) return colors.danger;
+    if (faltasRestantes <= 2) return colors.warning;
+    return colors.success;
   };
 
   const statusColor = getStatusColor();
@@ -90,24 +94,28 @@ export default function DetailsScreen({ route, navigation }) {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            <Ionicons name="arrow-back" size={24} color={colors.icon} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{materiaAtual.nome}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {materiaAtual.nome}
+          </Text>
         </View>
 
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total de faltas</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+              Total de faltas
+            </Text>
             <View style={[styles.badge, { backgroundColor: statusColor + "20" }]}>
               <Text style={[styles.badgeText, { color: statusColor }]}>
                 {totalFaltas}/{materiaAtual.maxFaltas}
@@ -115,7 +123,7 @@ export default function DetailsScreen({ route, navigation }) {
             </View>
           </View>
 
-          <View style={styles.progressBarBg}>
+          <View style={[styles.progressBarBg, { backgroundColor: colors.progressBg }]}>
             <View
               style={[
                 styles.progressBarFill,
@@ -131,35 +139,51 @@ export default function DetailsScreen({ route, navigation }) {
           </Text>
         </View>
 
-        <View style={styles.formCard}>
-          <Text style={styles.label}>Quantas faltas?</Text>
-          <View style={styles.inputWrapper}>
+        <View style={[styles.formCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>
+            Quantas faltas?
+          </Text>
+          <View
+            style={[
+              styles.inputWrapper,
+              { backgroundColor: colors.inputBackground, borderColor: colors.cardBorder },
+            ]}
+          >
             <Ionicons
               name="close-circle-outline"
               size={20}
-              color="#8E8E93"
+              color={colors.textMuted}
               style={styles.inputIcon}
             />
             <TextInput
+
               keyboardType="numeric"
               value={quantidadeFalta}
               onChangeText={setQuantidadeFalta}
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
             />
           </View>
 
-          <Text style={styles.label}>Explicação (opcional)</Text>
-          <View style={styles.inputWrapper}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>
+            Explicação (opcional)
+          </Text>
+          <View
+            style={[
+              styles.inputWrapper,
+              { backgroundColor: colors.inputBackground, borderColor: colors.cardBorder },
+            ]}
+          >
             <Ionicons
               name="chatbubble-ellipses-outline"
               size={20}
-              color="#8E8E93"
+              color={colors.textMuted}
               style={styles.inputIcon}
             />
             <TextInput
+
               value={explicacao}
               onChangeText={setExplicacao}
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
             />
           </View>
 
@@ -168,7 +192,7 @@ export default function DetailsScreen({ route, navigation }) {
             activeOpacity={0.8}
             style={[
               styles.saveButton,
-              faltasRestantes <= 0 && styles.saveButtonDisabled,
+              { backgroundColor: faltasRestantes <= 0 ? colors.primaryDisabled : colors.primary },
             ]}
           >
             <Ionicons name="add-circle" size={20} color="#fff" />
@@ -183,30 +207,36 @@ export default function DetailsScreen({ route, navigation }) {
           contentContainerStyle={{ paddingBottom: 20 }}
           ListHeaderComponent={
             materiaAtual.faltas.length > 0 ? (
-              <Text style={styles.historyTitle}>Histórico</Text>
+              <Text style={[styles.historyTitle, { color: colors.text }]}>
+                Histórico
+              </Text>
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={40} color="#BDBDBD" />
-              <Text style={styles.emptyText}>
+              <Ionicons name="calendar-outline" size={40} color={colors.textMuted} />
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
                 Nenhuma falta registrada ainda.
               </Text>
             </View>
           }
           renderItem={({ item }) => (
-            <View style={styles.faltaCard}>
-              <View style={styles.faltaIconWrapper}>
-                <Ionicons name="close" size={18} color="#E53935" />
+            <View style={[styles.faltaCard, { backgroundColor: colors.card }]}>
+              <View style={[styles.faltaIconWrapper, { backgroundColor: colors.dangerBg }]}>
+                <Ionicons name="close" size={18} color={colors.danger} />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={styles.faltaTopRow}>
-                  <Text style={styles.faltaData}>{item.data}</Text>
-                  <Text style={styles.faltaQuantidade}>
+                  <Text style={[styles.faltaData, { color: colors.text }]}>
+                    {item.data}
+                  </Text>
+                  <Text style={[styles.faltaQuantidade, { color: colors.textMuted }]}>
                     {item.quantidade} {item.quantidade === 1 ? "falta" : "faltas"}
                   </Text>
                 </View>
-                <Text style={styles.faltaExplicacao}>{item.explicacao}</Text>
+                <Text style={[styles.faltaExplicacao, { color: colors.textSecondary }]}>
+                  {item.explicacao}
+                </Text>
               </View>
             </View>
           )}
@@ -214,13 +244,11 @@ export default function DetailsScreen({ route, navigation }) {
       </View>
     </KeyboardAvoidingView>
   );
-  
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F6FA",
     paddingHorizontal: 20,
     paddingTop: 60,
   },
@@ -236,11 +264,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1A1A1A",
     flexShrink: 1,
   },
   summaryCard: {
-    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -258,7 +284,6 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: "#4A4A4A",
     fontWeight: "600",
   },
   badge: {
@@ -272,7 +297,6 @@ const styles = StyleSheet.create({
   },
   progressBarBg: {
     height: 6,
-    backgroundColor: "#EEEEF2",
     borderRadius: 3,
     overflow: "hidden",
     marginBottom: 8,
@@ -286,7 +310,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   formCard: {
-    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -299,16 +322,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4A4A4A",
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F6FA",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E4E4E9",
     paddingHorizontal: 14,
     marginBottom: 16,
   },
@@ -319,19 +339,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#1A1A1A",
   },
   saveButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#3D5AFE",
     borderRadius: 12,
     paddingVertical: 14,
     gap: 8,
-  },
-  saveButtonDisabled: {
-    backgroundColor: "#B0B7F5",
   },
   saveButtonText: {
     color: "#fff",
@@ -341,12 +356,10 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#1A1A1A",
     marginBottom: 12,
   },
   faltaCard: {
     flexDirection: "row",
-    backgroundColor: "#fff",
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -361,7 +374,6 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#FDECEA",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -373,15 +385,12 @@ const styles = StyleSheet.create({
   faltaData: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#1A1A1A",
   },
   faltaQuantidade: {
     fontSize: 13,
-    color: "#8E8E93",
   },
   faltaExplicacao: {
     fontSize: 13,
-    color: "#6B6B70",
   },
   emptyState: {
     alignItems: "center",
@@ -389,7 +398,6 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyText: {
-    color: "#8E8E93",
     marginTop: 10,
     fontSize: 14,
   },
@@ -401,6 +409,5 @@ const styles = StyleSheet.create({
   },
   notFoundText: {
     fontSize: 16,
-    color: "#8E8E93",
   },
 });

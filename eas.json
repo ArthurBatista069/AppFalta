@@ -8,8 +8,9 @@
       "developmentClient": true,
       "distribution": "internal"
     },
-   "preview": {
+ "preview": {
   "distribution": "internal",
+  "channel": "preview",
   "android": {
     "buildType": "apk"
   }

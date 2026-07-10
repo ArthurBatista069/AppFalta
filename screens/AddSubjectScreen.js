@@ -10,9 +10,11 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../context/ThemeContext";
 
 export default function AddSubjectScreen({ navigation, route }) {
   const { subjects, setSubjects } = route.params;
+  const { colors } = useTheme();
 
   const [nome, setNome] = useState("");
   const [maxFaltas, setMaxFaltas] = useState("");
@@ -45,11 +47,11 @@ export default function AddSubjectScreen({ navigation, route }) {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -59,17 +61,26 @@ export default function AddSubjectScreen({ navigation, route }) {
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            <Ionicons name="arrow-back" size={24} color={colors.icon} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Nova Matéria</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Nova Matéria
+          </Text>
         </View>
 
-        <Text style={styles.label}>Nome da Matéria</Text>
-        <View style={styles.inputWrapper}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>
+          Nome da Matéria
+        </Text>
+        <View
+          style={[
+            styles.inputWrapper,
+            { backgroundColor: colors.card, borderColor: colors.cardBorder },
+          ]}
+        >
           <Ionicons
             name="book-outline"
             size={20}
-            color="#8E8E93"
+            color={colors.textMuted}
             style={styles.inputIcon}
           />
           <TextInput
@@ -78,16 +89,23 @@ export default function AddSubjectScreen({ navigation, route }) {
               setNome(text);
               if (erro) setErro("");
             }}
-
+            style={[styles.input, { color: colors.text }]}
           />
         </View>
 
-        <Text style={styles.label}>Quantas faltas você pode ter?</Text>
-        <View style={styles.inputWrapper}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>
+          Quantas faltas você pode ter?
+        </Text>
+        <View
+          style={[
+            styles.inputWrapper,
+            { backgroundColor: colors.card, borderColor: colors.cardBorder },
+          ]}
+        >
           <Ionicons
             name="alert-circle-outline"
             size={20}
-            color="#8E8E93"
+            color={colors.textMuted}
             style={styles.inputIcon}
           />
           <TextInput
@@ -96,13 +114,17 @@ export default function AddSubjectScreen({ navigation, route }) {
               setMaxFaltas(text.replace(/[^0-9]/g, ""));
               if (erro) setErro("");
             }}
+            keyboardType="numeric"
+            style={[styles.input, { color: colors.text }]}
           />
         </View>
 
         {erro ? (
           <View style={styles.errorBox}>
-            <Ionicons name="warning-outline" size={16} color="#E53935" />
-            <Text style={styles.errorText}>{erro}</Text>
+            <Ionicons name="warning-outline" size={16} color={colors.danger} />
+            <Text style={[styles.errorText, { color: colors.danger }]}>
+              {erro}
+            </Text>
           </View>
         ) : null}
 
@@ -111,7 +133,7 @@ export default function AddSubjectScreen({ navigation, route }) {
           activeOpacity={0.8}
           style={[
             styles.saveButton,
-            !formValido && styles.saveButtonDisabled,
+            { backgroundColor: formValido ? colors.primary : colors.primaryDisabled },
           ]}
         >
           <Ionicons name="checkmark-circle" size={20} color="#fff" />
@@ -125,7 +147,6 @@ export default function AddSubjectScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F6FA",
     paddingHorizontal: 20,
     paddingTop: 60,
   },
@@ -141,21 +162,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#1A1A1A",
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4A4A4A",
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E4E4E9",
     paddingHorizontal: 14,
     marginBottom: 18,
   },
@@ -166,7 +183,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#1A1A1A",
   },
   errorBox: {
     flexDirection: "row",
@@ -176,21 +192,16 @@ const styles = StyleSheet.create({
     marginTop: -6,
   },
   errorText: {
-    color: "#E53935",
     fontSize: 13,
   },
   saveButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#3D5AFE",
     borderRadius: 12,
     paddingVertical: 15,
     marginTop: 10,
     gap: 8,
-  },
-  saveButtonDisabled: {
-    backgroundColor: "#B0B7F5",
   },
   saveButtonText: {
     color: "#fff",

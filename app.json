@@ -36,10 +36,13 @@
       }
     },
     "runtimeVersion": {
-      "policy": "appVersion"
-    },
+  "policy": "fingerprint"
+},
     "updates": {
       "url": "https://u.expo.dev/b824a2eb-5073-496c-aed9-f204c8e0326f"
-    }
+    },
+    "plugins": [
+      "expo-status-bar"
+    ]
   }
 }
