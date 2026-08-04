@@ -39,6 +39,7 @@ export default function AddSubjectScreen({ navigation, route }) {
       nome: nome.trim(),
       maxFaltas: parseInt(maxFaltas),
       faltas: [],
+      avaliacoes: [],
     };
 
     setSubjects([...subjects, novaMateria]);
