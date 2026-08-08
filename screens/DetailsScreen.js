@@ -69,11 +69,7 @@ export default function DetailsScreen({ route, navigation }) {
   const tipoInfo = (valor) =>
     TIPOS_AVALIACAO.find((t) => t.valor === valor) || TIPOS_AVALIACAO[0];
 
-  const corDoTipo = (valor) => {
-    if (valor === "prova") return colors.danger;
-    if (valor === "seminario") return colors.warning;
-    return colors.primary;
-  };
+  const corDoTipo = () => colors.avaliacao;
 
   const adicionarFalta = () => {
     if (!quantidadeFalta) return;
@@ -416,7 +412,7 @@ export default function DetailsScreen({ route, navigation }) {
                 <View style={styles.tipoRow}>
                   {TIPOS_AVALIACAO.map((tipo) => {
                     const selecionado = tipoAvaliacao === tipo.valor;
-                    const corDoTipo = () => colors.avaliacao;
+                    const cor = corDoTipo(tipo.valor);
                     return (
                       <TouchableOpacity
                         key={tipo.valor}
