@@ -11,6 +11,7 @@ import {
   Platform,
   StyleSheet,
   KeyboardAvoidingView,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
@@ -22,12 +23,18 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export default function DetailsScreen({ route, navigation }) {
-  const { subject, subjects, setSubjects } = route.params;
+export default function DetailsScreen({ route, navigation, subjects, setSubjects }) {
+  const { subject } = route.params;
   const { colors } = useTheme();
 
   const [quantidadeFalta, setQuantidadeFalta] = useState("");
   const [explicacao, setExplicacao] = useState("");
+  const [avaliacaoModalVisivel, setAvaliacaoModalVisivel] = useState(false);
+  const [avaliacaoEditando, setAvaliacaoEditando] = useState(null);
+  const [nomeAvaliacao, setNomeAvaliacao] = useState("");
+  const [notaAvaliacao, setNotaAvaliacao] = useState("");
+  const [pesoAvaliacao, setPesoAvaliacao] = useState("");
+  const [erroAvaliacao, setErroAvaliacao] = useState("");
 
   const materiaAtual = subjects.find((item) => item.id === subject.id);
 
@@ -48,6 +55,84 @@ export default function DetailsScreen({ route, navigation }) {
   );
 
   const faltasRestantes = materiaAtual.maxFaltas - totalFaltas;
+  const avaliacoes = materiaAtual.avaliacoes || [];
+  const avaliacoesComNota = avaliacoes.filter((item) => {
+    if (item.nota === null || item.nota === undefined || item.nota === "") return false;
+    const nota = Number(String(item.nota).replace(",", "."));
+    return Number.isFinite(nota) && nota >= 0 && nota <= 10 && Number(item.peso) > 0;
+  });
+  const pesoComNota = avaliacoesComNota.reduce((total, item) => total + Number(item.peso), 0);
+  const mediaPonderada = pesoComNota > 0
+    ? avaliacoesComNota.reduce(
+        (total, item) => total + Number(String(item.nota).replace(",", ".")) * Number(item.peso),
+        0,
+      ) / pesoComNota
+    : null;
+
+  const abrirFormularioAvaliacao = (avaliacao = null) => {
+    setAvaliacaoEditando(avaliacao);
+    setNomeAvaliacao(avaliacao?.nome || "");
+    setNotaAvaliacao(avaliacao?.nota == null ? "" : String(avaliacao.nota));
+    setPesoAvaliacao(avaliacao?.peso == null ? "" : String(avaliacao.peso));
+    setErroAvaliacao("");
+    setAvaliacaoModalVisivel(true);
+  };
+
+  const fecharFormularioAvaliacao = () => {
+    setAvaliacaoModalVisivel(false);
+    setAvaliacaoEditando(null);
+    setErroAvaliacao("");
+  };
+
+  const salvarAvaliacao = () => {
+    const peso = Number(pesoAvaliacao.trim().replace(",", "."));
+    const notaTexto = notaAvaliacao.trim().replace(",", ".");
+    const nota = notaTexto === "" ? null : Number(notaTexto);
+
+    if (!nomeAvaliacao.trim()) {
+      setErroAvaliacao("Informe o nome da avaliação.");
+      return;
+    }
+    if (!Number.isFinite(peso) || peso <= 0) {
+      setErroAvaliacao("Informe um peso maior que zero.");
+      return;
+    }
+    if (nota !== null && (!Number.isFinite(nota) || nota < 0 || nota > 10)) {
+      setErroAvaliacao("A nota deve estar entre 0 e 10 ou ficar vazia.");
+      return;
+    }
+
+    const registro = {
+      id: avaliacaoEditando?.id || Date.now().toString(),
+      nome: nomeAvaliacao.trim(),
+      nota,
+      peso,
+    };
+    setSubjects((atuais) => atuais.map((item) => {
+      if (item.id !== subject.id) return item;
+      const lista = item.avaliacoes || [];
+      const atualizadas = avaliacaoEditando
+        ? lista.map((avaliacao) => avaliacao.id === registro.id ? registro : avaliacao)
+        : [...lista, registro];
+      return { ...item, avaliacoes: atualizadas };
+    }));
+    fecharFormularioAvaliacao();
+  };
+
+  const removerAvaliacao = (id) => {
+    Alert.alert("Remover avaliação", "Deseja remover esta avaliação?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Remover",
+        style: "destructive",
+        onPress: () => setSubjects((atuais) => atuais.map((item) =>
+          item.id === subject.id
+            ? { ...item, avaliacoes: (item.avaliacoes || []).filter((avaliacao) => avaliacao.id !== id) }
+            : item
+        )),
+      },
+    ]);
+  };
 
   const adicionarFalta = () => {
     if (!quantidadeFalta) return;
@@ -137,6 +222,57 @@ export default function DetailsScreen({ route, navigation }) {
               ? `Você ainda pode faltar ${faltasRestantes}x`
               : "Limite de faltas atingido"}
           </Text>
+        </View>
+
+        <View style={[styles.evaluationCard, { backgroundColor: colors.card }]}>
+          <View style={styles.evaluationHeader}>
+            <View>
+              <Text style={[styles.historyTitle, { color: colors.text, marginBottom: 4 }]}>Notas</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13 }}>
+                Média {mediaPonderada === null ? "—" : mediaPonderada.toFixed(2).replace(".", ",")}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => abrirFormularioAvaliacao()}
+              style={[styles.addEvaluationButton, { backgroundColor: colors.primary }]}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.addEvaluationButtonText}>Adicionar</Text>
+            </TouchableOpacity>
+          </View>
+
+          {avaliacoes.length === 0 ? (
+            <Text style={[styles.emptyEvaluationsText, { color: colors.textMuted }]}>
+              Nenhuma nota cadastrada.
+            </Text>
+          ) : avaliacoes.map((avaliacao) => (
+            <View key={avaliacao.id} style={[styles.evaluationRow, { borderColor: colors.cardBorder }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.evaluationName, { color: colors.text }]}>{avaliacao.nome}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                  {avaliacao.nota === null || avaliacao.nota === undefined || avaliacao.nota === ""
+                    ? "Sem nota"
+                    : String(avaliacao.nota).replace(".", ",")}
+                  {"  ·  Peso "}{avaliacao.peso}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => abrirFormularioAvaliacao(avaliacao)}
+                style={styles.evaluationIconButton}
+                accessibilityLabel={`Editar ${avaliacao.nome}`}
+              >
+                <Ionicons name="create-outline" size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => removerAvaliacao(avaliacao.id)}
+                style={styles.evaluationIconButton}
+                accessibilityLabel={`Remover ${avaliacao.nome}`}
+              >
+                <Ionicons name="trash-outline" size={19} color={colors.danger} />
+              </TouchableOpacity>
+            </View>
+          ))}
         </View>
 
         <View style={[styles.formCard, { backgroundColor: colors.card }]}>
@@ -241,6 +377,63 @@ export default function DetailsScreen({ route, navigation }) {
             </View>
           )}
         />
+
+        <Modal
+          visible={avaliacaoModalVisivel}
+          transparent
+          animationType="fade"
+          onRequestClose={fecharFormularioAvaliacao}
+        >
+          <KeyboardAvoidingView
+            style={styles.modalOverlay}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {avaliacaoEditando ? "Editar nota" : "Nova nota"}
+              </Text>
+              <TextInput
+                value={nomeAvaliacao}
+                onChangeText={setNomeAvaliacao}
+                placeholder="Avaliação (ex.: Prova 1)"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.modalInput, { color: colors.text, backgroundColor: colors.inputBackground, borderColor: colors.cardBorder }]}
+              />
+              <TextInput
+                value={notaAvaliacao}
+                onChangeText={setNotaAvaliacao}
+                keyboardType="decimal-pad"
+                placeholder="Nota (opcional, 0–10)"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.modalInput, { color: colors.text, backgroundColor: colors.inputBackground, borderColor: colors.cardBorder }]}
+              />
+              <TextInput
+                value={pesoAvaliacao}
+                onChangeText={setPesoAvaliacao}
+                keyboardType="decimal-pad"
+                placeholder="Peso"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.modalInput, { color: colors.text, backgroundColor: colors.inputBackground, borderColor: colors.cardBorder }]}
+              />
+              {erroAvaliacao ? (
+                <Text style={[styles.evaluationError, { color: colors.danger }]}>{erroAvaliacao}</Text>
+              ) : null}
+              <View style={styles.modalActions}>
+                <TouchableOpacity onPress={fecharFormularioAvaliacao} style={styles.modalCancelButton}>
+                  <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={salvarAvaliacao}
+                  style={[styles.modalFinishButton, { backgroundColor: colors.primary }]}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="checkmark-circle" size={19} color="#fff" />
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
       </View>
     </KeyboardAvoidingView>
   );
@@ -353,6 +546,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  evaluationCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  evaluationHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 10,
+  },
+  addEvaluationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    gap: 4,
+  },
+  addEvaluationButtonText: { color: "#fff", fontWeight: "600", fontSize: 13 },
+  emptyEvaluationsText: { fontSize: 13, paddingVertical: 8 },
+  evaluationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 11,
+    marginTop: 4,
+  },
+  evaluationName: { fontSize: 14, fontWeight: "600", marginBottom: 3 },
+  evaluationIconButton: { padding: 8 },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalCard: { borderRadius: 18, padding: 20, maxWidth: 500, width: "100%", alignSelf: "center" },
+  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 18 },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 15,
+    marginBottom: 14,
+  },
+  evaluationError: { fontSize: 13, marginBottom: 10 },
+  modalActions: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 12, marginTop: 4 },
+  modalCancelButton: { paddingHorizontal: 10, paddingVertical: 12 },
+  modalFinishButton: { flexDirection: "row", alignItems: "center", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, gap: 6 },
   historyTitle: {
     fontSize: 16,
     fontWeight: "700",

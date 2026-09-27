@@ -30,7 +30,7 @@ export default function HomeScreen({ navigation, route }) {
   };
 
   const removerMateria = (id) => {
-    setSubjects(subjects.filter((item) => item.id !== id));
+    setSubjects((materiasAtuais) => materiasAtuais.filter((item) => item.id !== id));
   };
 
   const getStatusColor = (total, max) => {

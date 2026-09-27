@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
 export default function AddSubjectScreen({ navigation, route }) {
-  const { subjects, setSubjects } = route.params;
+  const { setSubjects } = route.params;
   const { colors } = useTheme();
 
   const [nome, setNome] = useState("");
@@ -39,9 +39,10 @@ export default function AddSubjectScreen({ navigation, route }) {
       nome: nome.trim(),
       maxFaltas: parseInt(maxFaltas),
       faltas: [],
+      avaliacoes: [],
     };
 
-    setSubjects([...subjects, novaMateria]);
+    setSubjects((materiasAtuais) => [...materiasAtuais, novaMateria]);
     navigation.goBack();
   };
 

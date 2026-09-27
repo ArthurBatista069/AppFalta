@@ -13,26 +13,47 @@ const Stack = createNativeStackNavigator();
 
 function AppContent() {
   const [subjects, setSubjects] = useState([]);
+  const [subjectsLoaded, setSubjectsLoaded] = useState(false);
   const { colors, modoEscuro } = useTheme();
 
   useEffect(() => {
+    let ativo = true;
+
+    const carregarMaterias = async () => {
+      try {
+        const dados = await AsyncStorage.getItem("subjects");
+        if (dados) {
+          const materiasSalvas = JSON.parse(dados);
+          if (ativo && Array.isArray(materiasSalvas)) {
+            setSubjects(materiasSalvas);
+          }
+        }
+      } catch (error) {
+        console.warn("Não foi possível carregar as matérias salvas.", error);
+      } finally {
+        if (ativo) setSubjectsLoaded(true);
+      }
+    };
+
     carregarMaterias();
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   useEffect(() => {
+    if (!subjectsLoaded) return;
+
+    const salvarMaterias = async () => {
+      try {
+        await AsyncStorage.setItem("subjects", JSON.stringify(subjects));
+      } catch (error) {
+        console.warn("Não foi possível salvar as matérias.", error);
+      }
+    };
+
     salvarMaterias();
-  }, [subjects]);
-
-  const carregarMaterias = async () => {
-    const dados = await AsyncStorage.getItem("subjects");
-    if (dados) {
-      setSubjects(JSON.parse(dados));
-    }
-  };
-
-  const salvarMaterias = async () => {
-    await AsyncStorage.setItem("subjects", JSON.stringify(subjects));
-  };
+  }, [subjects, subjectsLoaded]);
 
   const navTheme = {
     ...(modoEscuro ? DarkTheme : DefaultTheme),
@@ -45,19 +66,28 @@ function AppContent() {
   return (
     <NavigationContainer theme={navTheme}>
       <StatusBar style={colors.statusBar} />
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Home">
-          {(props) => (
-            <HomeScreen
-              {...props}
-              route={{ params: { subjects, setSubjects } }}
-            />
-          )}
-        </Stack.Screen>
-
-        <Stack.Screen name="Adicionar" component={AddSubjectScreen} />
-        <Stack.Screen name="Detalhes" component={DetailsScreen} />
-      </Stack.Navigator>
+      {subjectsLoaded ? (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Home">
+            {(props) => (
+              <HomeScreen
+                {...props}
+                route={{ params: { subjects, setSubjects } }}
+              />
+            )}
+          </Stack.Screen>
+          <Stack.Screen name="Adicionar" component={AddSubjectScreen} />
+          <Stack.Screen name="Detalhes">
+            {(props) => (
+              <DetailsScreen
+                {...props}
+                subjects={subjects}
+                setSubjects={setSubjects}
+              />
+            )}
+          </Stack.Screen>
+        </Stack.Navigator>
+      ) : null}
     </NavigationContainer>
   );
 }
